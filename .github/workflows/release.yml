@@ -15,8 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
-      FIREFOX_SOURCE_DIR: ${{ runner.temp }}/firefox
-      CASTOR_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.1.0' }}
+      CASTOR_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.1.0' }}
     steps:
       - name: Check out Castor configuration
         uses: actions/checkout@v4
