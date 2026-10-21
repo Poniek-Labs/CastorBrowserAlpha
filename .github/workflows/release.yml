@@ -1,0 +1,95 @@
+name: Build Castor Browser
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Build Linux package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      FIREFOX_SOURCE_DIR: ${{ runner.temp }}/firefox
+      CASTOR_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.1.0' }}
+    steps:
+      - name: Check out Castor configuration
+        uses: actions/checkout@v4
+
+      - name: Cache Mozilla build state
+        uses: actions/cache@v4
+        with:
+          path: ~/.mozbuild
+          key: mozbuild-${{ runner.os }}-${{ hashFiles('build-castor.sh') }}
+          restore-keys: mozbuild-${{ runner.os }}-
+
+      - name: Build Castor Browser
+        env:
+          CASTOR_PLATFORM: linux
+        run: ./build-castor.sh
+
+      - name: Upload build packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: castor-browser-linux
+          path: build-output/*
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows installer
+    runs-on: windows-2022
+    timeout-minutes: 360
+    env:
+      MOZILLABUILD: C:\mozilla-build
+    steps:
+      - name: Check out Castor configuration
+        uses: actions/checkout@v4
+
+      - name: Cache Mozilla build state
+        uses: actions/cache@v4
+        with:
+          path: ~/.mozbuild
+          key: mozbuild-${{ runner.os }}-${{ hashFiles('build-castor.sh') }}
+          restore-keys: mozbuild-${{ runner.os }}-
+
+      - name: Install MozillaBuild
+        shell: pwsh
+        run: choco install mozillabuild --yes --no-progress
+
+      - name: Build Castor Browser
+        shell: pwsh
+        run: |
+          $drive = $env:GITHUB_WORKSPACE.Substring(0, 1).ToLower()
+          $path = $env:GITHUB_WORKSPACE.Substring(2).Replace('\', '/')
+          $workspace = "/$drive$path"
+          $env:CASTOR_PLATFORM = "windows"
+          & "$env:MOZILLABUILD\start-shell.bat" -no-start -defterm -c "cd '$workspace' && ./build-castor.sh"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: castor-browser-windows
+          path: build-output/*
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish release packages
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download platform packages
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-files/**/*
