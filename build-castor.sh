@@ -18,6 +18,9 @@ if [[ ! -f "$source_dir/mach" ]]; then
     exit 1
   fi
   command -v git >/dev/null || { printf 'Error: git is required.\n' >&2; exit 1; }
+  if [[ "$target_platform" == windows ]]; then
+    git config --global core.longpaths true
+  fi
   git clone --depth 1 "$firefox_repository" "$source_dir"
 fi
 
@@ -52,7 +55,7 @@ printf 'ac_add_options --with-branding=browser/branding/castor\n' > "$mozconfig"
 export MOZCONFIG="$mozconfig"
 
 cd "$source_dir"
-./mach bootstrap --application-choice browser --no-interactive
+./mach bootstrap --application-choice browser
 ./mach build
 ./mach package
 
