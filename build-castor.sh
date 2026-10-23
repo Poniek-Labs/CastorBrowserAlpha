@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source_dir="${FIREFOX_SOURCE_DIR:-$repo_root/firefox}"
 firefox_repository="${FIREFOX_REPOSITORY:-https://github.com/mozilla-firefox/firefox.git}"
+firefox_branch="${FIREFOX_BRANCH:-release}"
 output_dir="$repo_root/build-output"
 target_platform="${CASTOR_PLATFORM:-linux}"
 
@@ -21,7 +22,7 @@ if [[ ! -f "$source_dir/mach" ]]; then
   if [[ "$target_platform" == windows ]]; then
     git config --global core.longpaths true
   fi
-  git clone --depth 1 "$firefox_repository" "$source_dir"
+  git clone --depth 1 --branch "$firefox_branch" "$firefox_repository" "$source_dir"
 fi
 
 if [[ ! -d "$source_dir/browser/branding/unofficial" ]]; then
@@ -33,6 +34,47 @@ branding_dir="$source_dir/browser/branding/castor"
 mkdir -p "$branding_dir"
 cp -a "$source_dir/browser/branding/unofficial/." "$branding_dir/"
 cat "$repo_root/branding/castor/branding.nsi" >> "$branding_dir/branding.nsi"
+
+cat > "$branding_dir/locales/en-US/brand.ftl" <<'EOF'
+-brand-shorter-name = Castor
+-brand-short-name = Castor
+-brand-shortcut-name = Castor
+-brand-full-name = Castor Browser
+-brand-product-name = Castor Browser
+-vendor-short-name = Poniek Labs
+trademarkInfo = { " " }
+EOF
+
+cat > "$branding_dir/pref/firefox-branding.js" <<'EOF'
+pref("app.update.channel", "release");
+pref("app.update.enabled", false);
+pref("startup.homepage_override_url", "https://github.com/Poniek-Labs/CastorBrowserAlpha");
+pref("startup.homepage_welcome_url", "https://github.com/Poniek-Labs/CastorBrowserAlpha");
+EOF
+
+logo_png="$repo_root/logo/castor.png"
+if [[ ! -f "$logo_png" ]]; then
+  printf 'Error: Castor logo not found: %s\n' "$logo_png" >&2
+  exit 1
+fi
+if [[ "$target_platform" == linux ]]; then
+  command -v convert >/dev/null || { printf 'Error: ImageMagick convert is required.\n' >&2; exit 1; }
+  convert "$logo_png" -resize 16x16 "$branding_dir/default16.png"
+  convert "$logo_png" -resize 22x22 "$branding_dir/default22.png"
+  convert "$logo_png" -resize 24x24 "$branding_dir/default24.png"
+  convert "$logo_png" -resize 32x32 "$branding_dir/default32.png"
+  convert "$logo_png" -resize 48x48 "$branding_dir/default48.png"
+  convert "$logo_png" -resize 64x64 "$branding_dir/default64.png"
+  convert "$logo_png" -resize 128x128 "$branding_dir/default128.png"
+  convert "$logo_png" -resize 256x256 "$branding_dir/default256.png"
+else
+  command -v magick >/dev/null || { printf 'Error: ImageMagick magick is required.\n' >&2; exit 1; }
+  magick "$logo_png" -define icon:auto-resize=256,128,64,48,32,16 "$branding_dir/firefox.ico"
+  magick "$logo_png" -define icon:auto-resize=256,128,64,48,32,16 "$branding_dir/firefox64.ico"
+  for size in 16 32 48 64 128 256; do
+    magick "$logo_png" -resize "${size}x${size}" "$branding_dir/default${size}.png"
+  done
+fi
 
 preferences_dir="$source_dir/browser/app/profile/defaults/preferences"
 mkdir -p "$preferences_dir"
@@ -51,7 +93,10 @@ fi
 
 mozconfig="$(mktemp)"
 trap 'rm -f "$mozconfig"' EXIT
-printf 'ac_add_options --with-branding=browser/branding/castor\n' > "$mozconfig"
+cat > "$mozconfig" <<'EOF'
+ac_add_options --with-branding=browser/branding/castor
+ac_add_options --enable-update-channel=release
+EOF
 export MOZCONFIG="$mozconfig"
 
 cd "$source_dir"

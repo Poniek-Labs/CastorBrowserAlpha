@@ -27,15 +27,19 @@ To use an existing checkout:
 FIREFOX_SOURCE_DIR=/path/to/firefox ./build-castor.sh
 ```
 
-The first build bootstraps Mozilla's build dependencies and compiles a package
-for the selected platform. Linux builds include a Debian `.deb` package alongside
-the original Firefox archive. Set `CASTOR_PLATFORM=windows` when running under
-MozillaBuild to produce a Windows installer `.exe`. Builds require substantial
-disk space and time. Output packages are written to `build-output/`.
+The first build bootstraps Mozilla's build dependencies and compiles Firefox's
+stable `release` branch. Castor branding is applied to the browser UI, application
+icons, Windows installer, startup preferences, and Linux desktop launcher. Linux
+builds include a Debian `.deb` package alongside the original Firefox archive.
+Set `CASTOR_PLATFORM=windows` when running under MozillaBuild to produce a
+Windows installer `.exe`. Builds require substantial disk space and time. Output
+packages are written to `build-output/`.
 
-Version tags beginning with `v` trigger Linux and Windows builds. The Windows
-job requires MozillaBuild and publishes an installer `.exe`; the Linux job
-publishes a `.deb`. Both are attached to the GitHub Release.
+Mozilla's automatic update channel is disabled so the build cannot silently
+replace Castor with a Mozilla-branded release. Version tags beginning with `v`
+trigger Linux and Windows builds. The Windows job requires MozillaBuild and
+publishes an installer `.exe`; the Linux job publishes a `.deb`. Both are attached
+to the GitHub Release.
 
 ## Project files
 

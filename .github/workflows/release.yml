@@ -27,6 +27,9 @@ jobs:
           key: mozbuild-${{ runner.os }}-${{ hashFiles('build-castor.sh') }}
           restore-keys: mozbuild-${{ runner.os }}-
 
+      - name: Install Linux logo tools
+        run: sudo apt-get update && sudo apt-get install --yes imagemagick
+
       - name: Build Castor Browser
         env:
           CASTOR_PLATFORM: linux
@@ -56,9 +59,10 @@ jobs:
           key: mozbuild-${{ runner.os }}-${{ hashFiles('build-castor.sh') }}
           restore-keys: mozbuild-${{ runner.os }}-
 
-      - name: Install MozillaBuild
+      - name: Install MozillaBuild and logo tools
         shell: pwsh
-        run: choco install mozillabuild --yes --no-progress
+        run: |
+          choco install mozillabuild imagemagick --yes --no-progress
 
       - name: Build Castor Browser
         shell: pwsh
