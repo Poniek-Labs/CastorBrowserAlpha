@@ -96,6 +96,11 @@ trap 'rm -f "$mozconfig"' EXIT
 cat > "$mozconfig" <<'EOF'
 ac_add_options --with-branding=browser/branding/castor
 ac_add_options --enable-update-channel=release
+ac_add_options --enable-artifact-builds
+ac_add_options --disable-debug
+ac_add_options --disable-tests
+ac_add_options --disable-crashreporter
+mk_add_options MOZ_MAKE_FLAGS=-j2
 EOF
 export MOZCONFIG="$mozconfig"
 

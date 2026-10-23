@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 360
     env:
       CASTOR_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.1.0' }}
+      MOZBUILD_STATE_PATH: ${{ github.workspace }}/.mozbuild
     steps:
       - name: Check out Castor configuration
         uses: actions/checkout@v4
@@ -48,6 +49,7 @@ jobs:
     timeout-minutes: 360
     env:
       MOZILLABUILD: C:\mozilla-build
+      MOZBUILD_STATE_PATH: C:\Users\runneradmin\.mozbuild
     steps:
       - name: Check out Castor configuration
         uses: actions/checkout@v4
